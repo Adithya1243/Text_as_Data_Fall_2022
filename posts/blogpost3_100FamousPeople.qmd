@@ -32,7 +32,7 @@ library(stopwords)
 library(tidyverse)
 library(tidytext)
 
-knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Reading Data
@@ -40,7 +40,7 @@ knitr::opts_chunk$set(echo=TRUE)
 ### **From CSV**
 
 ```{r}
-dataset <- read_csv("./100FamousPeople_new.csv")
+dataset <- read_csv("./temp.csv")
 head(dataset)
 ```
 
@@ -53,11 +53,16 @@ There are many people in the list who are still alive. Hence the age range(eg. 1
 ```{r}
 # from
 from <-
-  dataset$peoples_title %>% tolower() %>% str_extract(., "[0-9]+\\s")
+  dataset$peoples_title %>%
+  tolower() %>%
+  str_extract(., "[0-9]+\\s")
 
 # to
 to <-
-  dataset$peoples_title %>% tolower() %>% str_extract(., "\\s[0-9]+") %>% replace(., is.na(.), '2022')
+  dataset$peoples_title %>%
+  tolower() %>%
+  str_extract(., "\\s[0-9]+") %>%
+  replace(., is.na(.), "2022")
 
 dataset$from <- from
 dataset$to <- to
@@ -70,16 +75,17 @@ Removing unwanted terms using regex from peoples_title column, which provides a 
 
 ```{r}
 dataset$peoples_title <-
-  dataset$peoples_title %>%  tolower() %>%  # converting to lowercase
+  dataset$peoples_title %>%
+  tolower() %>% # converting to lowercase
   str_sort() %>%
   str_extract(., "\\).*") %>% # extracting all text after ')'. Have to remove ')'
-  str_replace(., "\\) ", "") %>%  #replacing ) in all lines
-  str_remove_all(., "\\)[0-9]*") %>% str_trim(., "both") %>%
-  str_remove_all(., "[0-9]*") %>% str_trim(., "right") %>% str_replace_all("[–|-|-|(|.]", "") %>% str_trim(., "both")
-
-
-
-
+  str_replace(., "\\) ", "") %>% # replacing ) in all lines
+  str_remove_all(., "\\)[0-9]*") %>%
+  str_trim(., "both") %>%
+  str_remove_all(., "[0-9]*") %>%
+  str_trim(., "right") %>%
+  str_replace_all("[–|-|-|(|.]", "") %>%
+  str_trim(., "both")
 ```
 
 I have created pre-defined occupations to group all people accordingly. They are **politician, royalty, spiritual, businessman, entertainment, humanitarian, academia, sports,** and **others.** After categorising thoroughly there were still some people who did not fall into these categories. I've assigned those people with a **others** tag.
@@ -88,33 +94,39 @@ I have created pre-defined occupations to group all people accordingly. They are
 # only profession
 
 politician <-
-  c("president",
+  c(
+    "president",
     "leader",
     "minister",
     "first lady",
     "wife",
-    "resistance")
+    "resistance"
+  )
 
 royalty <- c("heir", "throne", "monarch", "emperor", "princess")
 
 spiritual <- c("devotee", "pope")
 
 businessman <-
-  c("founder",
+  c(
+    "founder",
     "chairman",
     "businessman",
     "industrialist",
     "entrepreneur",
-    "co-founder")
+    "co-founder"
+  )
 
 artist <-
-  c("musician",
+  c(
+    "musician",
     "singer",
     "dancer",
     "designer",
     "painter",
     "composer",
-    "poet")
+    "poet"
+  )
 
 entertainment <-
   c("actress", "director", "producer", "playwright", "comedian")
@@ -143,23 +155,27 @@ academia <-
   )
 
 sports <-
-  c("sport",
+  c(
+    "sport",
     "football",
     "baseball",
     "golf",
     "athlete",
     "tennis",
     "boxer",
-    "basketball")
+    "basketball"
+  )
 
 others <-
-  c("explorer",
+  c(
+    "explorer",
     "dancer",
     "designer",
     "socialite",
     "spy",
     "model",
-    "astronaut")
+    "astronaut"
+  )
 
 dataset$profession <- with(
   dataset,
@@ -181,7 +197,6 @@ dataset$profession <- with(
 dataset$profession <- dataset$profession %>% replace_na(., "others")
 
 dataset
-
 ```
 
 ## By country
@@ -209,13 +224,15 @@ europe_countries <-
     "austria"
   )
 other_countries <-
-  c("tibetan",
+  c(
+    "tibetan",
     "russian",
     "ethiopia",
     "egypt",
     "jamaica",
     "burmese",
-    "africa")
+    "africa"
+  )
 south_america <- c("argentin", "cuba", "brazilian")
 pakistan <- c("pakistan")
 dataset$country <- with(
@@ -241,7 +258,6 @@ dataset$country <- with(
 dataset$country <- dataset$country %>% replace_na(., "others")
 
 colnames(dataset)
-
 ```
 
 ## By Gender
@@ -251,14 +267,16 @@ dataset$gender <- with(
   dataset,
   case_when(
     str_detect(dataset$content, "\\bHis\\b") ~ "male",
-    str_detect(dataset$content, "\\bHer\\b") ~ "female"))
+    str_detect(dataset$content, "\\bHer\\b") ~ "female"
+  )
+)
 
 
-dataset$gender[13] = "male"
-dataset$gender[14] = "male"
-dataset$gender[55] = "male"
-dataset$gender[64] = "female"
-dataset$gender[86] = "male"
+dataset$gender[13] <- "male"
+dataset$gender[14] <- "male"
+dataset$gender[55] <- "male"
+dataset$gender[64] <- "female"
+dataset$gender[86] <- "male"
 ```
 
 # Data Cleaning of Biographies
@@ -268,18 +286,18 @@ I've used stringr package to remove text such as "adsbygoogle.com" which came al
 This cleaning is done to all rows in the data set, but there are a few special characters that are still left to be cleaned. Writing regex had been difficult, but at least for the word cloud has a feature to ignore special characters :). I will have to find a way to generate dataset which is void of all special characters so that it doesn't effect the analysis in later stages.
 
 ```{r}
-dataset$content <- dataset$content %>% str_remove_all(.,"adsbygoogle") %>%
-  str_remove_all(.,"www.biographyonline.net") %>% 
-  str_remove_all(.,"window.") %>% 
-  str_remove_all(.,".push") %>% 
-  gsub("Citation.*","",.)
-
+dataset$content <- dataset$content %>%
+  str_remove_all(., "adsbygoogle") %>%
+  str_remove_all(., "www.biographyonline.net") %>%
+  str_remove_all(., "window.") %>%
+  str_remove_all(., ".push") %>%
+  gsub("Citation.*", "", .)
 ```
 
 ## Updating the csv file
 
 ```{r}
-write.csv(dataset,"100FamousPeople_new.csv")
+write.csv(dataset, "temp.csv")
 ```
 
 # Future Analysis

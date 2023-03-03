@@ -1,0 +1,280 @@
+---
+title: "Blog 6 - Conclusions, Scope and Future Analysis"
+author: "Adithya Parupudi"
+desription: ""
+date: "12/06/2022"
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-copy: true
+    code-tools: true
+categories:
+  - Adithya Parupudi
+---
+
+# Libraries
+```{r}
+#| label: setup
+#| warning: false
+
+library(tidyverse)
+library(stm)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Reading data
+```{r}
+dataset <- read_csv("./100FamousPeople_new.csv")
+head(dataset)
+```
+
+
+
+# Artists
+I am filtering the data set only to see the artists. By running the table command, we can see the distribution of artists in all countries and we can observe that America has the highest number of artists at 5, followed by Europe at 4 and Britain at 3.
+```{r}
+x<-dataset %>% select(country, people_names, profession) %>% filter(profession == 'artist')
+
+table(x$country)
+
+
+```
+
+# STM on artists
+
+Creating separate variables to identify artists of America, Europe and Britain separately. 
+
+```{r}
+
+artist_america <- dataset %>% select(country, people_names, profession, content) %>% filter(profession == 'artist' & country == 'america') 
+
+artist_british <- dataset %>% select(country, people_names, profession, content) %>% filter(profession == 'artist' & country == 'british') 
+
+artist_europe <- dataset %>% select(country, people_names, profession, content) %>% filter(profession == 'artist' & country == 'europe') 
+
+
+```
+
+
+
+# America artists
+
+## Running topic models
+Performing data preprocessing by removing stop words, punctuation, converting to lowercase, and stemming words. Using the prepDocuments() function as a base to run an STM with K = 6
+```{r}
+artist_america_processed <- textProcessor(documents = artist_america$content, 
+                           metadata = artist_america,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+artist_america_prepped <- prepDocuments(documents = artist_america_processed$documents,
+                         vocab = artist_america_processed$vocab,
+                         meta = artist_america_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+artist_america_basicmodel <- stm(documents = artist_america_prepped$documents,
+                         vocab = artist_america_prepped$vocab,
+                         data = artist_america_prepped$meta,
+                         K=6,
+                         verbose = F)
+```
+
+## Plot Topics
+We can observe 6 topics below
+```{r}
+plot.STM(artist_america_basicmodel)
+```
+## Topic correlation
+We can observe that topics 1,5,6 are correlated
+
+```{r}
+plot(topicCorr(artist_america_basicmodel))
+
+```
+
+## Wordcloud of topic 1
+```{r}
+cloud(stmobj = artist_america_basicmodel,
+      topic=1,
+      random.order=F,
+      rot.per=0)
+```
+## Wordcloud of topic 5
+```{r}
+cloud(stmobj = artist_america_basicmodel,
+      topic=5,
+      random.order=F,
+      rot.per=0)
+```
+
+
+## Wordcloud of topic 6
+```{r}
+cloud(stmobj = artist_america_basicmodel,
+      topic=6,
+      random.order=F,
+      rot.per=0)
+```
+## Interpretation
+With K=5, picked topic with highest relevance to the documents. All of them were musicians(jazz, pop, rock n roll etc). Sales, happiness, record, career -> talk about their success. These artists come from a humble background. Divorce, death, break -> negatives which speak about their challenges in life. Either lost someone close to them, or they have expired at a young age.
+
+
+
+# Britain artists
+Performing data preprocessing by removing stop words, punctuation, converting to lowercase, and stemming words. Using the prepDocuments() function as a base to run an STM with K = 3. There is lack of more information, hence cannot observe any correlations. 
+
+```{r}
+artist_british_processed <- textProcessor(documents = artist_british$content, 
+                           metadata = artist_british,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+artist_british_prepped <- prepDocuments(documents = artist_british_processed$documents,
+                         vocab = artist_british_processed$vocab,
+                         meta = artist_british_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+artist_british_basicmodel <- stm(documents = artist_british_prepped$documents,
+                         vocab = artist_british_prepped$vocab,
+                         data = artist_british_prepped$meta,
+                         K=3,
+                         verbose = F)
+
+
+
+
+
+
+```
+
+## Plotting STM
+```{r}
+plot.STM(artist_british_basicmodel)
+
+
+```
+
+## Topic correlation
+Looks like there is no correlation between 3 topics. This is due to unavailability of more data. If there was more data ( referring to more number of artists in Britain), then there is a possibility of observing more relations
+```{r}
+
+plot(topicCorr(artist_british_basicmodel))
+
+```
+
+## Word cloud of topic 1
+
+```{r}
+cloud(stmobj = artist_british_basicmodel,
+      topic=1,
+      random.order=F,
+      rot.per=0)
+
+```
+## Interpretation
+Had 3 artists. With k=3, this is also focusing on the Beatles musical career and their success in the music industry. As you can see there is not much correlation between the topics. John Lennon took a solo career path and gained huge fame.
+
+
+# European artists
+Performing data preprocessing by removing stop words, punctuation, converting to lowercase, and stemming words. Using the prepDocuments() function as a base to run an STM with K = 5
+```{r}
+artist_europe_processed <- textProcessor(documents = artist_europe$content, 
+                           metadata = artist_europe,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+artist_europe_prepped <- prepDocuments(documents = artist_europe_processed$documents,
+                         vocab = artist_europe_processed$vocab,
+                         meta = artist_europe_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+artist_europe_basicmodel <- stm(documents = artist_europe_prepped$documents,
+                         vocab = artist_europe_prepped$vocab,
+                         data = artist_europe_prepped$meta,
+                         K=5,
+                         verbose = F)
+
+
+plot.STM(artist_europe_basicmodel)
+
+
+
+
+
+```
+
+
+## Plot correlated topic model
+```{r}
+
+
+plot(topicCorr(artist_europe_basicmodel))
+```
+
+## Word cloud of topic 1
+```{r}
+cloud(stmobj = artist_europe_basicmodel,
+      topic=1,
+      random.order=F,
+      rot.per=0)
+```
+## Word cloud of topic 5
+
+```{r}
+cloud(stmobj = artist_europe_basicmodel,
+      topic=5,
+      random.order=F,
+      rot.per=0)
+```
+
+## Interpretation
+Their interpretation revolved around money, world and work. It started out as a dark past, with family issues and later observed success. 
+
+
+# Conclusions
+
+Since the world witnessed two world wars in the past century (with tensions still existing today), it was interesting to see the inception of a new era during the warring period where many leaders stood up to what they believed in, and let to the foundations of a nation. There were many mentions of internal and external battles in each politician’s life. In other categories, people had many humble beginnings in their sports and music career, where they later branched out to have their own style. But commonly, war played a significant roles in shaping their career.
+
+
+For artists, All of them were musicians(jazz, pop, rock n roll etc). Sales, happiness, record, career -> talk about their success. These artists come from a humble background. Divorce, death, break -> negatives which speak about their challenges in life. Either lost someone close to them, or they have expired at a young age.
+
+
+For academicians
+Stories and struggles of people like J.K Rowling, Charles Darwin, C.S Lewis are shown in these results. Their life stories show passion, setbacks and growth on their literary works. Though they faced a lot of criticism, their works were became popular after they passed away. 
+
+# Limitations
+
+
+
+This project had many modules, and I was not able to interpret categories such as spiritual, royalty and humanitarian. Firstly, because there is not much information in their biographies, i.e., there is not enough data that covers all aspects of their life. Secondly there are not enough people to find similarities. From my research, I understood that results will be much interpretable if I have a larger dataset to work with, for unsupervised learning.
+
+While I am trying to use searchK() to find the optimal k value, I am getting an error. I have tweaked this function in multiple ways but there was no result. From what I understood through experimenting is, searchK() only works when the data set is high in number. 
+
+Since I filtered the dataset(using multiple filters), each scenario has utmost 4 rows worth of information which is too low for searchK to provide any insights on this. 
+
+
+
+# Future Scope
+For further analysis, it would be interesting to see the leadership traits between people of the same profession, belonging to different countries. There is also a scope to perform sentiment analysis to find out what people actually think of their work. A future research question would be ‘Were people really as popular as they are perceived?’ Comments on leaders perspective through tweets, news articles, comment section, polls etc make a good dataset

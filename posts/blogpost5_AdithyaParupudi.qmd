@@ -1,0 +1,278 @@
+---
+title: "Blog 5 - More Topic Modelling"
+author: "Adithya Parupudi"
+desription: "Topic modeling on politicians, actors, writers"
+date: "11/27/2022"
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-copy: true
+    code-tools: true
+categories:
+  - Adithya Parupudi
+---
+
+# Libraries
+
+Reading in all the libraries :)
+
+```{r}
+#| label: setup
+#| warning: false
+library(tidyverse)
+library(stm)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Reading Data
+
+
+```{r}
+dataset <- read_csv("./100FamousPeople_new.csv")
+head(dataset)
+```
+
+# To find similarity in Politician
+
+In this blogpost, I will explore on the similarities between politicians of three countries that interested me. They are America (USA), India and Russia. I have studied about these countries a lot over these years and thought it would be interesting to search for similarities between people originating from these places. 
+
+## Creating new var for America, Russia and India
+Defined three variables by filtering the data set with two filters, i.e., by country(ind, russia, usa) and by profession ( politician)
+```{r}
+politician_ind <- dataset %>%
+  filter(profession == "politician") %>%
+  filter(country == "india")
+
+politician_america <- dataset %>%
+  filter(profession == "politician") %>%
+  filter(country == "america")
+
+politician_russia <- dataset %>%
+  filter(profession == "politician") %>%
+  filter(country == "russia")
+```
+
+
+
+# Indian politicians
+Performing data preprocessing by removing stop words, punctuation, converting to lowercase, and stemming words. Using the prepDocuments() function as a base to run an STM with K = 5
+
+```{r}
+politician_ind_processed <- textProcessor(
+  documents = politician_ind$content,
+  metadata = politician_ind,
+  lowercase = T,
+  removestopwords = T,
+  removenumbers = T,
+  removepunctuation = T,
+  stem = T,
+  wordLengths = c(3, Inf),
+  language = "en",
+  onlycharacter = T
+)
+
+politician_ind_prepped <- prepDocuments(
+  documents = politician_ind_processed$documents,
+  vocab = politician_ind_processed$vocab,
+  meta = politician_ind_processed$meta,
+  lower.thresh = 2,
+  upper.thresh = Inf
+)
+
+politician_ind_basicmodel <- stm(
+  documents = politician_ind_prepped$documents,
+  vocab = politician_ind_prepped$vocab,
+  data = politician_ind_prepped$meta,
+  K = 5,
+  verbose = F
+)
+```
+
+## Errors with searchK()
+While I am trying to use searchK() to find the optimal k value, I am getting an error. I have tweaked this function in multiple ways but there was no result. From what I understood through experimenting is, searchK() only works when the data set is high in number. 
+
+Since I filtered the dataset(using multiple filters), each scenario has utmost 4 rows worth of information which is too low for searchK to provide any insights on this. 
+
+So throughout this blogpost, I will select K value based on experimentation. The best k value, according to me is, the uniqueness of words in each topic. If I am seeing more unique words in each topic, then the corresponding 'k' is good. 
+```{r}
+searchK(politician_ind_processed$documents,
+  politician_ind_processed$vocab,
+  K = c(2, 5),
+  data = politician_ind_processed$meta,
+  verbose = FALSE
+)
+```
+
+## Indian politician topics
+
+Plotting the Indian politician topics with K = 5
+
+```{r}
+plot.STM(politician_ind_basicmodel)
+```
+## Indian correlations
+
+Toipcs (4,3) and (2,5) are correlated
+
+```{r}
+plot(topicCorr(politician_ind_basicmodel))
+```
+
+
+## Topic 2 word cloud
+
+```{r}
+cloud(
+  stmobj = politician_ind_basicmodel,
+  topic = 2,
+  random.order = F,
+  rot.per = 0
+)
+```
+
+## Topic 5 word cloud
+
+```{r}
+cloud(
+  stmobj = politician_ind_basicmodel,
+  topic = 5,
+  random.order = F,
+  rot.per = 0
+)
+```
+
+
+# Russian politicans
+Performing data preprocessing by removing stop words, punctuation, converting to lowercase, and stemming words. Using the prepDocuments() function as a base to run an STM with K = 5
+
+```{r}
+politician_russia_processed <- textProcessor(
+  documents = politician_russia$content,
+  metadata = politician_russia,
+  lowercase = T,
+  removestopwords = T,
+  removenumbers = T,
+  removepunctuation = T,
+  stem = T,
+  wordLengths = c(3, Inf),
+  language = "en",
+  onlycharacter = T
+)
+
+politician_russia_prepped <- prepDocuments(
+  documents = politician_russia_processed$documents,
+  vocab = politician_russia_processed$vocab,
+  meta = politician_russia_processed$meta,
+  lower.thresh = 2,
+  upper.thresh = Inf
+)
+
+politician_russia_basicmodel <- stm(
+  documents = politician_russia_prepped$documents,
+  vocab = politician_russia_prepped$vocab,
+  data = politician_russia_prepped$meta,
+  K = 5,
+  verbose = F
+)
+```
+
+## Russian Topic Models
+Printing topics
+```{r}
+plot.STM(politician_russia_basicmodel)
+```
+## Russian Correlations
+We can see correlation between topic 1 and 5
+```{r}
+plot(topicCorr(politician_russia_basicmodel))
+```
+## Russian word cloud
+```{r}
+cloud(
+  stmobj = politician_russia_basicmodel,
+  topic = 1,
+  random.order = F,
+  rot.per = 0
+)
+```
+
+
+# America politician
+Performing data preprocessing by removing stop words, punctuation, converting to lowercase, and stemming words. Using the prepDocuments() function as a base to run an STM with K = 5
+
+```{r}
+politician_america_processed <- textProcessor(
+  documents = politician_america$content,
+  metadata = politician_america,
+  lowercase = T,
+  removestopwords = T,
+  removenumbers = T,
+  removepunctuation = T,
+  stem = T,
+  wordLengths = c(3, Inf),
+  language = "en",
+  onlycharacter = T
+)
+
+politician_america_prepped <- prepDocuments(
+  documents = politician_america_processed$documents,
+  vocab = politician_america_processed$vocab,
+  meta = politician_america_processed$meta,
+  lower.thresh = 2,
+  upper.thresh = Inf
+)
+
+politician_america_basicmodel <- stm(
+  documents = politician_america_prepped$documents,
+  vocab = politician_america_prepped$vocab,
+  data = politician_america_prepped$meta,
+  K = 6,
+  verbose = F
+)
+```
+
+## America Topics
+Topic 6 is talking about presidents, war and economy which sort of summarises all the topics here. The famous politicians from america are all presidents. During each term there was an internal or external strife which they worked very hard to deal with. 
+```{r}
+plot.STM(politician_america_basicmodel)
+```
+## Plotting correlation
+Looks like no observations are related
+```{r}
+plot(topicCorr(politician_america_basicmodel))
+```
+## America- Word clouds 
+
+```{r}
+
+
+cloud(
+  stmobj = politician_america_basicmodel,
+  topic = 1,
+  random.order = F,
+  rot.per = 0
+)
+```
+
+
+
+# Interpretation so far
+
+With what we have observed so far, here are my interepretations.
+
+Russia : Its is centered towards governance, war, communism, revolution, power. These words paint a picture of an internal power struggle ( Lenin vs Stalin) and the feelings associated with it. Germany, because of Karl Marx and WW2. This is the time when there were major changes started happening internally where they were deciding on power distribution. Later on, communism & nuclear disarmament happened.
+
+India : Here the focus is on Indian independence movement, where Gandhi was the most important figure. This word cloud tells me the struggles, death, protests, imprisonment during the freedom struggle.
+
+America : Since the list is almost entirely made of presidents, the theme here is ‘Reforming America’. It captures the struggles each one faced w.r.t to elections, internal affairs, wars, civil movements. This tells the story of the politicians’ struggle to maintain peace both in locally and internationally.
+
+
+# Future Analysis
+
+To perform similarity check on artists from Britain, USA and Europe
+
+
+
+
+

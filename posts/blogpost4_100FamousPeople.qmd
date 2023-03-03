@@ -30,8 +30,7 @@ Reading data from CSV file
 
 ```{r}
 
-dataset <- read.csv('./100FamousPeople_new.csv')
-
+dataset <- read.csv("./100FamousPeople_new.csv")
 ```
 
 Let us try to visualize a few things from the dataset we have collected so far. What I am interested to see are:
@@ -49,7 +48,7 @@ Below is the code for a pie-chart for country distribution, where its evident th
 
 ```{r}
 myPalette <- brewer.pal(5, "Set2")
-pie(table(dataset$country), border="white", col=myPalette,cex=0.9)
+pie(table(dataset$country), border = "white", col = myPalette, cex = 0.9)
 
 country_data <- data.frame(country = dataset$country)
 
@@ -61,7 +60,6 @@ PieChart(
   main = ""
 )
 
-plot(country_data)
 ```
 
 # Tree Map for Profession distribution
@@ -73,18 +71,18 @@ The second highest was occupied by 'Artists', followed by 'Academia' and 'Sports
 ```{r}
 # Create data
 tree_map_data <- data.frame(table(dataset$profession))
- 
+
 colnames(tree_map_data)
 # treemap
 treemap(tree_map_data,
-            index="Var1",
-            vSize="Freq",
-            type="index",
-        border.col=c("black","white"),
-        border.lwds=c(2,2),
-        title="Profession distribution",
-        palette = "Set2"
-            )
+  index = "Var1",
+  vSize = "Freq",
+  type = "index",
+  border.col = c("black", "white"),
+  border.lwds = c(2, 2),
+  title = "Profession distribution",
+  palette = "Set2"
+)
 ```
 
 ## 
@@ -96,23 +94,32 @@ Since there were two world wars in the last century and most of the people liste
 It can be inferred from the graph that 41 people were born before World War 1 and 29 people after the second war, with 23 people being born between the wars.
 
 ```{r}
-before_ww1 <- dataset %>% select(from) %>% filter(from < 1913) %>% nrow()
+before_ww1 <- dataset %>%
+  select(from) %>%
+  filter(from < 1913) %>%
+  nrow()
 
-between_wars <- dataset %>% select(from) %>% filter(from > 1913 & from < 1939) %>% nrow()
-after_ww2 <- dataset %>% select(from) %>% filter(from > 1945) %>% nrow()
+between_wars <- dataset %>%
+  select(from) %>%
+  filter(from > 1913 & from < 1939) %>%
+  nrow()
+after_ww2 <- dataset %>%
+  select(from) %>%
+  filter(from > 1945) %>%
+  nrow()
 
 # new graph =======================================
 
 era_df <- data.frame(
-  era=c("Before WW1(< 1914)","Between Wars","After WW2(>1945)") ,  
-  value=c("41","23","29")
-  )
+  era = c("Before WW1(< 1914)", "Between Wars", "After WW2(>1945)"),
+  value = c("41", "23", "29")
+)
 
 
-ggplot(era_df, aes(x = era, y = value, fill = era)) +  
+ggplot(era_df, aes(x = era, y = value, fill = era)) +
   geom_bar(stat = "identity") +
   geom_text(aes(label = value), vjust = 0) +
-  xlab("Era --->")+
+  xlab("Era --->") +
   ylab("Number of people --->")
 ```
 
@@ -130,17 +137,16 @@ table(dataset$gender)
 # taking values from the above result, creating a bar graph
 
 gender_df <- data.frame(
-  gender=c("Female","Male") ,  
-  value=c("27","73")
-  )
+  gender = c("Female", "Male"),
+  value = c("27", "73")
+)
 
 
-ggplot(gender_df, aes(x = gender, y = value, fill = gender)) +  
+ggplot(gender_df, aes(x = gender, y = value, fill = gender)) +
   geom_bar(stat = "identity") +
   geom_text(aes(label = value), vjust = 0) +
-  xlab("Gender")+
+  xlab("Gender") +
   ylab("Count")
-
 ```
 
 # Topic Modeling
@@ -153,17 +159,16 @@ The data here is a collection of people's biographies. In other words, it is a c
 
 # Academicians of Britain
 
-To begin with, I want to see the similarities between Acadamicians of Britain. They are filtered through the 'country' and 'profession' column, stored in a data frame for further processing.
+To begin with, I want to see the similarities between Academicians of Britain. They are filtered through the 'country' and 'profession' column, stored in a data frame for further processing.
 
 Some names I am familiar with are Charles Darwin, J.K Rowling, C.S Lewis
 
 ```{r}
 
 
-academia_df <- dataset %>%  filter(`profession` == 'academia' & `country` == 'british')
+academia_df <- dataset %>% filter(`profession` == "academia" & `country` == "british")
 
 academia_df
-
 ```
 
 ## Topic Modeling
@@ -173,30 +178,35 @@ Here, using the stm package, I am pre-processing the text by removing stopwords,
 Point to note : I have chosen k=8 (which gives me 8 topics). Here, I have verified this model with other values of K and decided that k=8 gave me the best topics.
 
 ```{r}
-academia_processed <- textProcessor(documents = academia_df$content, 
-                           metadata = academia_df,
-                           lowercase = T,
-                           removestopwords = T,
-                           removenumbers = T,
-                           removepunctuation = T,
-                           stem=T,
-                           wordLengths = c(3,Inf),
-                           language = "en",
-                           onlycharacter = T)
+academia_processed <- textProcessor(
+  documents = academia_df$content,
+  metadata = academia_df,
+  lowercase = T,
+  removestopwords = T,
+  removenumbers = T,
+  removepunctuation = T,
+  stem = T,
+  wordLengths = c(3, Inf),
+  language = "en",
+  onlycharacter = T
+)
 
-academia_prepped <- prepDocuments(documents = academia_processed$documents,
-                         vocab = academia_processed$vocab,
-                         meta = academia_processed$meta,
-                         lower.thresh = 2,
-                         upper.thresh = Inf)
+academia_prepped <- prepDocuments(
+  documents = academia_processed$documents,
+  vocab = academia_processed$vocab,
+  meta = academia_processed$meta,
+  lower.thresh = 2,
+  upper.thresh = Inf
+)
 
-academia_basicmodel <- stm(documents = academia_prepped$documents,
-                         vocab = academia_prepped$vocab,
-                         data = academia_prepped$meta,
-                         K=8,
-                         verbose = F,
-                         seed = 1234
-                         )
+academia_basicmodel <- stm(
+  documents = academia_prepped$documents,
+  vocab = academia_prepped$vocab,
+  data = academia_prepped$meta,
+  K = 8,
+  verbose = F,
+  seed = 1234
+)
 ```
 
 # Plot topic models
@@ -213,8 +223,6 @@ Looks like topics 2,4,6,7,8 are correlated. Lets dive deeper to understand what 
 
 ```{r}
 plot(topicCorr(academia_basicmodel))
-
-
 ```
 
 # Most frequent words in each topic
@@ -222,17 +230,9 @@ plot(topicCorr(academia_basicmodel))
 Below is the list of most frequently appearing words in each topic
 
 ```{r}
-plot(academia_basicmodel, type="labels", topics=c(2,4,6,7,8))
-
+plot(academia_basicmodel, type = "labels", topics = c(2, 4, 6, 7, 8))
 ```
 
-# Plot histogram
-
-```{r}
-
-plot(academia_basicmodel, type="hist")
-
-```
 
 # Comparing two topics
 
@@ -240,7 +240,7 @@ I felt topic 6,7 are very interesting. Both talk about struggles with publishing
 
 ```{r}
 
-plot(academia_basicmodel, type="perspectives", topics=c(6,7))
+plot(academia_basicmodel, type = "perspectives", topics = c(6, 7))
 ```
 
 ## searchK() to find the optimal K
@@ -249,13 +249,12 @@ I am unable to make the searchK() function work here. No matter how I tweak this
 
 ```{r}
 findingK <- searchK(academia_prepped$documents,
-                    academia_prepped$vocab,
-                    K=2,
-                    data=academia_prepped$meta,
-                    verbose=FALSE)
+  academia_prepped$vocab,
+  K = 2,
+  data = academia_prepped$meta,
+  verbose = FALSE
+)
 plot(findingK)
-
-
 ```
 
 # Interpretation
@@ -264,7 +263,6 @@ I am able to see the correlation between topics 2,4,6,7,8 for those categorized 
 
 There is one big influencing factor in their works. For JK Rowling, it was the train journey and the past events. For George Orwell, it was the oppression and current political situation, and for Charles Darwin it was his overseas voyage and innate sense of curiosity. None of them were primarily focused on traditional forms of learning, and each were going through a rough phase of life. Topics 6 and 7 about success with their books and tough times in their relationships. Topic 2, 8 talks about how their social life was a big influence in shaping their ideas and how they became renowned as the most influential people of all time.
 
-
 # Future Steps
 
-I want to perform topic modeling on politicians and artists of USA, India, and Russia to see similarities between them. It would be interesting to see what I can be interpreted with these countries. 
+I want to perform topic modeling on politicians and artists of USA, India, and Russia to see similarities between them. It would be interesting to see what I can be interpreted with these countries.

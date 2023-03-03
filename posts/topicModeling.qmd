@@ -1,0 +1,561 @@
+---
+title: "Blog Post Template"
+author: "Your Name"
+desription: "Something to describe what I did"
+date: "08/02/2022"
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-copy: true
+    code-tools: true
+categories:
+  - hw1
+  - challenge1
+  - my name
+  - dataset
+  - ggplot2
+---
+
+```{r}
+#| label: setup
+#| warning: false
+
+library(quanteda)
+library(stm)
+library(tidyverse)
+library(tokenizers)
+library(tm)
+library(tidytext)
+library(ggplot2)
+knitr::opts_chunk$set(echo=TRUE)
+```
+
+
+
+```{r}
+dataset <- read_csv('./100FamousPeople_new.csv')
+head(dataset)
+```
+```{r}
+table(dataset$profession)
+
+artist_df <- dataset %>% filter(profession == 'artist') %>% 
+  select(people_names, content, country, gender)
+
+```
+
+
+# Pre processing
+```{r}
+
+artist_processed <- textProcessor(documents = artist_df$content, 
+                           metadata = artist_df,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+```
+
+```{r}
+
+artist_prepped <- prepDocuments(documents = artist_processed$documents,
+                         vocab = artist_processed$vocab,
+                         meta = artist_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+```
+
+
+```{r}
+
+artist_prepped$vocab[1:30]
+
+```
+
+# Estimate basic model
+
+```{r}
+
+artist_basicmodel <- stm(documents = artist_prepped$documents,
+                         vocab = artist_prepped$vocab,
+                         data = artist_prepped$meta,
+                         K=8,
+                         verbose = F)
+
+```
+
+# Inspect topic words
+```{r}
+labelTopics(artist_basicmodel)
+```
+
+```{r}
+plot.STM(artist_basicmodel)
+
+```
+# word clouds
+
+```{r}
+cloud(stmobj = artist_basicmodel,
+      topic=8,
+      random.order=F,
+      rot.per=0)
+
+
+
+```
+# understanding topics
+
+```{r}
+
+findThoughts(model = artist_basicmodel,
+             texts = artist_prepped$meta$description,
+             topics = 5,
+             n=5)
+
+
+```
+
+
+# Politicians
+```{r}
+
+politician_df <- dataset %>% filter(profession == 'politician') %>% 
+  select(people_names,content)
+
+```
+
+```{r}
+
+politician_processed <- textProcessor(documents = politician_df$content, 
+                           metadata = politician_df,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+politician_prepped <- prepDocuments(documents = politician_processed$documents,
+                         vocab = politician_processed$vocab,
+                         meta = politician_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+politician_basicmodel <- stm(documents = politician_prepped$documents,
+                         vocab = politician_prepped$vocab,
+                         data = politician_prepped$meta,
+                         K=8,
+                         verbose = F)
+
+
+plot.STM(politician_basicmodel)
+
+cloud(stmobj = politician_basicmodel,
+      topic=8,
+      random.order=F,
+      rot.per=0)
+
+findThoughts(model = politician_basicmodel,
+             texts = politician_basicmodel$meta,
+             topics = 5,
+             n=3)
+
+findingK <- searchK(politician_prepped$documents,
+                    politician_prepped$vocab,
+                    K=c(2,5,10,15),
+                    data=politician_prepped$meta,
+                    verbose=FALSE)
+
+plot(findingK)
+
+
+politician_prepped_corr <- topicCorr(politician_basicmodel)$cor
+politician_prepped_corr[politician_prepped_corr < 0] <- 0
+
+politician_prepped_igraph <- graph.adjacency(politician_prepped_corr,
+                                             mode="undirected",
+                                             weighted=T,
+                                             diag=F)
+
+politician_prepped_labels <- apply(labelTopics(politician_basicmodel)$prob, 1,paste, collapse="\n")
+
+plot.igraph(politician_prepped_igraph, 
+            vertex.label = politician_prepped_labels,
+            vertex.size = colMeans(politician_basicmodel$theta)*200,
+            edge.width = E(politician_prepped_igraph)$weight *50)
+
+```
+
+# British Academia
+```{r}
+
+head(dataset)
+
+academia_df <- dataset %>%  filter(`profession` == 'academia' & `country` == 'british')
+
+
+```
+
+```{r}
+academia_processed <- textProcessor(documents = academia_df$content, 
+                           metadata = academia_df,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+academia_prepped <- prepDocuments(documents = academia_processed$documents,
+                         vocab = academia_processed$vocab,
+                         meta = academia_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+academia_basicmodel <- stm(documents = academia_prepped$documents,
+                         vocab = academia_prepped$vocab,
+                         data = academia_prepped$meta,
+                         K=8,
+                         verbose = F)
+
+
+plot.STM(academia_basicmodel)
+
+plot(topicCorr(academia_basicmodel))
+
+
+
+```
+```{r}
+cloud(stmobj = academia_basicmodel,
+      topic=1,
+      random.order=F,
+      rot.per=0)
+
+
+```
+
+
+```{r}
+
+dataset %>%  filter(profession == 'politician') %>% filter(country == 'india' | country == 'russia' | country == 'america')
+
+politician_ind <- dataset %>%  filter(profession == 'politician') %>% filter(country == 'india')
+
+politician_america <- dataset %>%  filter(profession == 'politician') %>% filter(country == 'america')
+
+politician_russia <- dataset %>%  filter(profession == 'politician') %>% filter(country == 'russia')
+
+
+```
+# training indian politicians
+
+```{r}
+politician_ind_processed <- textProcessor(documents = politician_ind$content, 
+                           metadata = politician_ind,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+politician_ind_prepped <- prepDocuments(documents = politician_ind_processed$documents,
+                         vocab = politician_ind_processed$vocab,
+                         meta = politician_ind_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+politician_ind_basicmodel <- stm(documents = politician_ind_prepped$documents,
+                         vocab = politician_ind_prepped$vocab,
+                         data = politician_ind_prepped$meta,
+                         K=5,
+                         verbose = F)
+
+
+plot.STM(politician_ind_basicmodel)
+
+plot(topicCorr(politician_ind_basicmodel))
+
+
+
+```
+
+```{r}
+
+cloud(stmobj = politician_ind_basicmodel,
+      topic=2,
+      random.order=F,
+      rot.per=0)
+```
+```{r}
+
+
+```
+
+
+# russian politicans
+
+```{r}
+politician_russia_processed <- textProcessor(documents = politician_russia$content, 
+                           metadata = politician_russia,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+politician_russia_prepped <- prepDocuments(documents = politician_russia_processed$documents,
+                         vocab = politician_russia_processed$vocab,
+                         meta = politician_russia_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+politician_russia_basicmodel <- stm(documents = politician_russia_prepped$documents,
+                         vocab = politician_russia_prepped$vocab,
+                         data = politician_russia_prepped$meta,
+                         K=4,
+                         verbose = F)
+
+
+plot.STM(politician_russia_basicmodel)
+
+
+```
+
+
+```{r}
+cloud(stmobj = politician_russia_basicmodel,
+      topic=3,
+      random.order=F,
+      rot.per=0)
+
+
+```
+# america politician
+
+```{r}
+politician_america_processed <- textProcessor(documents = politician_america$content, 
+                           metadata = politician_america,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+politician_america_prepped <- prepDocuments(documents = politician_america_processed$documents,
+                         vocab = politician_america_processed$vocab,
+                         meta = politician_america_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+politician_america_basicmodel <- stm(documents = politician_america_prepped$documents,
+                         vocab = politician_america_prepped$vocab,
+                         data = politician_america_prepped$meta,
+                         K=4,
+                         verbose = F)
+
+
+plot.STM(politician_america_basicmodel)
+
+
+```
+```{r}
+
+
+cloud(stmobj = politician_america_basicmodel,
+      topic=1,
+      random.order=F,
+      rot.per=0)
+
+```
+
+```{r}
+politician_america_prepped_corr <-
+  topicCorr(politician_america_basicmodel)$cor
+politician_america_prepped_corr[politician_america_prepped_corr < 0] <- 0
+
+politician_america_prepped_igraph <-
+  graph.adjacency(
+    politician_america_prepped_corr,
+    mode = "undirected",
+    weighted = T,
+    diag = F
+  )
+
+politician_america_prepped_labels <-
+  apply(labelTopics(politician_america_basicmodel)$prob,
+        1,
+        paste,
+        collapse = "\n")
+
+plot.igraph(
+  politician_america_prepped_igraph,
+  vertex.label = politician_america_prepped_labels,
+  vertex.size = colMeans(politician_america_basicmodel$theta) * 300,
+  edge.width = E(politician_america_prepped_igraph)$weight * 100
+)
+
+
+
+```
+
+
+# Artists
+```{r}
+x<-dataset %>% select(country, people_names, profession) %>% filter(profession == 'artist')
+
+table(x$country)
+
+
+```
+
+
+```{r}
+
+artist_america <- dataset %>% select(country, people_names, profession, content) %>% filter(profession == 'artist' & country == 'america') 
+
+artist_british <- dataset %>% select(country, people_names, profession, content) %>% filter(profession == 'artist' & country == 'british') 
+
+artist_europe <- dataset %>% select(country, people_names, profession, content) %>% filter(profession == 'artist' & country == 'europe') 
+
+
+```
+
+# america artist
+```{r}
+artist_america_processed <- textProcessor(documents = artist_america$content, 
+                           metadata = artist_america,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+artist_america_prepped <- prepDocuments(documents = artist_america_processed$documents,
+                         vocab = artist_america_processed$vocab,
+                         meta = artist_america_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+artist_america_basicmodel <- stm(documents = artist_america_prepped$documents,
+                         vocab = artist_america_prepped$vocab,
+                         data = artist_america_prepped$meta,
+                         K=6,
+                         verbose = F)
+
+
+plot.STM(artist_america_basicmodel)
+
+# cloud(stmobj = artist_america_basicmodel,
+#       topic=4,
+#       random.order=F,
+#       rot.per=0)
+
+plot(topicCorr(artist_america_basicmodel))
+
+```
+
+# british artist
+
+```{r}
+artist_british_processed <- textProcessor(documents = artist_british$content, 
+                           metadata = artist_british,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+artist_british_prepped <- prepDocuments(documents = artist_british_processed$documents,
+                         vocab = artist_british_processed$vocab,
+                         meta = artist_british_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+artist_british_basicmodel <- stm(documents = artist_british_prepped$documents,
+                         vocab = artist_british_prepped$vocab,
+                         data = artist_british_prepped$meta,
+                         K=3,
+                         verbose = F)
+
+
+plot.STM(artist_british_basicmodel)
+
+cloud(stmobj = artist_british_basicmodel,
+      topic=1,
+      random.order=F,
+      rot.per=0)
+
+plot(topicCorr(artist_british_basicmodel))
+
+
+
+```
+
+
+# Europe artist
+
+```{r}
+artist_europe_processed <- textProcessor(documents = artist_europe$content, 
+                           metadata = artist_europe,
+                           lowercase = T,
+                           removestopwords = T,
+                           removenumbers = T,
+                           removepunctuation = T,
+                           stem=T,
+                           wordLengths = c(3,Inf),
+                           language = "en",
+                           onlycharacter = T)
+
+artist_europe_prepped <- prepDocuments(documents = artist_europe_processed$documents,
+                         vocab = artist_europe_processed$vocab,
+                         meta = artist_europe_processed$meta,
+                         lower.thresh = 2,
+                         upper.thresh = Inf)
+
+artist_europe_basicmodel <- stm(documents = artist_europe_prepped$documents,
+                         vocab = artist_europe_prepped$vocab,
+                         data = artist_europe_prepped$meta,
+                         K=3,
+                         verbose = F)
+
+
+plot.STM(artist_europe_basicmodel)
+
+cloud(stmobj = artist_europe_basicmodel,
+      topic=2,
+      random.order=F,
+      rot.per=0)
+
+plot(topicCorr(artist_europe_basicmodel))
+
+
+
+```
+

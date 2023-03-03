@@ -44,24 +44,27 @@ I wanted to find out the following:
 Reading the content of landing page, which has urls of all the famous people.
 
 ```{r}
-all = read_html("https://www.biographyonline.net/people/famous-100.html")
-
+all <- read_html("https://www.biographyonline.net/people/famous-100.html")
 ```
 
 I've created three variables to capture the celebrity names, their occupation/title(as described by the website) and their content. Each page contains various excerpts from their life such as "Early Life", "Notable Achievements", "Famous Quotes" and so on.
 
 ```{r}
-people_names <- all %>% html_nodes("ol:nth-child(2) a") %>% html_text()
+people_names <- all %>%
+  html_nodes("ol:nth-child(2) a") %>%
+  html_text()
 # people_names
 length(people_names)
 typeof(people_names)
 
-missing_names <- c("Joe Biden","Tiger Woods","Kim Kardashian","Elon Musk")
-people_names<- append(people_names,missing_names)
+missing_names <- c("Joe Biden", "Tiger Woods", "Kim Kardashian", "Elon Musk")
+people_names <- append(people_names, missing_names)
 
 # temp <- data.frame(people_names, people_title)
 
-peoples_title <- all %>% html_nodes("ol:nth-child(2) li") %>% html_text() 
+peoples_title <- all %>%
+  html_nodes("ol:nth-child(2) li") %>%
+  html_text()
 ```
 
 
@@ -71,36 +74,48 @@ I've written a function which recursively pulls data from the website and stores
 
 ```{r}
 # getting all the links
-links <- all %>% html_nodes("ol:nth-child(2) a") %>% 
-  html_attr("href") %>% 
-  str_replace(.,"/women/ingrid-bergman.html", "../women/ingrid-bergman.html") %>% 
-  str_replace(.,"https://www.biographyonline.net/", "../") %>% 
-  str_replace(.,"../", "https://www.biographyonline.net/")
+links <- all %>%
+  html_nodes("ol:nth-child(2) a") %>%
+  html_attr("href") %>%
+  str_replace(., "/women/ingrid-bergman.html", "../women/ingrid-bergman.html") %>%
+  str_replace(., "https://www.biographyonline.net/", "../") %>%
+  str_replace(., "../", "https://www.biographyonline.net/")
 
 # function which pulls data from the website
-get_content = function(link){
-  data = read_html(link)
+get_content <- function(link) {
+  data <- read_html(link)
   # data = read_html("https://www.biographyonline.net/nobelprize/economics/paul-krugman.html")
-  content = data %>% html_nodes('.clearfix') %>% html_text() %>% paste(collapse = "!!!")
+  content <- data %>%
+    html_nodes(".clearfix") %>%
+    html_text() %>%
+    paste(collapse = "!!!")
   return(content)
 }
 
 # output is stored in 'content' variable
-content = sapply(links, FUN = get_content, USE.NAMES = FALSE) 
+content <- sapply(links, FUN = get_content, USE.NAMES = FALSE)
 
 # joe biden
-content[97]<- read_html('https://en.wikipedia.org/wiki/Joe_Biden') %>% 
-  html_nodes('p') %>% html_text() %>% paste(collapse = '!!!')
-content[97] 
+content[97] <- read_html("https://en.wikipedia.org/wiki/Joe_Biden") %>%
+  html_nodes("p") %>%
+  html_text() %>%
+  paste(collapse = "!!!")
+content[97]
 # tiger woods
-content[98] <- read_html('https://en.wikipedia.org/wiki/Tiger_Woods') %>% 
-  html_nodes('p') %>% html_text() %>% paste(collapse = '!!!')
-#kim kardashian
-content[99] <- read_html('https://en.wikipedia.org/wiki/Kim_Kardashian') %>% 
-  html_nodes('p') %>% html_text() %>% paste(collapse = '!!!')
-#elon musk
-content[100] <- read_html('https://en.wikipedia.org/wiki/Elon_Musk') %>% 
-  html_nodes('p') %>% html_text() %>% paste(collapse = '!!!')
+content[98] <- read_html("https://en.wikipedia.org/wiki/Tiger_Woods") %>%
+  html_nodes("p") %>%
+  html_text() %>%
+  paste(collapse = "!!!")
+# kim kardashian
+content[99] <- read_html("https://en.wikipedia.org/wiki/Kim_Kardashian") %>%
+  html_nodes("p") %>%
+  html_text() %>%
+  paste(collapse = "!!!")
+# elon musk
+content[100] <- read_html("https://en.wikipedia.org/wiki/Elon_Musk") %>%
+  html_nodes("p") %>%
+  html_text() %>%
+  paste(collapse = "!!!")
 ```
 
 ### Creating dataframe
@@ -109,7 +124,7 @@ Creating a data frame which combines all the variables so far.
 
 ```{r}
 # creating new dataframe
-dataset_new = data.frame(people_names, peoples_title, content, stringsAsFactors = FALSE)
+dataset_new <- data.frame(people_names, peoples_title, content, stringsAsFactors = FALSE)
 ```
 
 ### Arranging in alphabetical order of names
@@ -117,7 +132,7 @@ dataset_new = data.frame(people_names, peoples_title, content, stringsAsFactors 
 The data in website is a jumbled list. So, arranging the data in alphabetical order of people names.
 
 ```{r}
-dataset_new = arrange(dataset_new, people_names)
+dataset_new <- arrange(dataset_new, people_names)
 ```
 
 ### Writing to CSV file
@@ -125,8 +140,8 @@ dataset_new = arrange(dataset_new, people_names)
 Writing all details to a .csv file.
 
 ```{r}
-#saving dataset to .csv file
-write.csv(dataset_new,"100FamousPeople_new.csv")
+# saving dataset to .csv file
+write.csv(dataset_new, "temp.csv")
 ```
 
 Now that I've collected the dataset, I have to perform text pre-processing by removing some urls that came with scraped content. Also split the content into multiple rows for better readability and context clarity.
@@ -136,7 +151,7 @@ Now that I've collected the dataset, I have to perform text pre-processing by re
 **Read CSV**
 
 ```{r}
-dataset<- read_csv("100FamousPeople_new.csv")
+dataset <- read_csv("temp.csv")
 ```
 
 ```{r}
